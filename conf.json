@@ -1,0 +1,9 @@
+{
+    "rx1_port": 6,
+    "rx2_port": 2,
+    "dual_rx": true,
+    "bf_port": "/dev/ttyACM0",
+    "target": "Unified_ESP8285_900_RX_via_BetaflightPassthrough",
+    "firmware_file_rx1": "firmware_rx1.bin",
+    "firmware_file_rx2": "firmware_rx2.bin"
+}
