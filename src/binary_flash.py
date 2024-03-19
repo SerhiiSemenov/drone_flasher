@@ -115,9 +115,11 @@ def int_serial(baud_rate):
         sys.exit()
     return ser
 
-def change_serial_config(bf_serial, uart_number):
+def change_serial_config(bf_serial, uart_number_to_set, uart_number_to_reset):
 
-    bf_serial.write((f"serial {uart_number} 64 115200 57600 0 115200" + "\n").encode())
+    bf_serial.write((f"serial {uart_number_to_set} 64 115200 57600 0 115200" + "\n").encode())
+    time.sleep(0.3)
+    bf_serial.write((f"serial {uart_number_to_reset} 0 115200 57600 0 115200" + "\n").encode())
     time.sleep(0.3)
     bf_serial.write(("save" + "\n").encode())
     bf_serial.close()
@@ -176,7 +178,6 @@ if __name__ == '__main__':
     config = parse_config_file()
     rx1_port = config['rx1_port'] - 1
     rx2_port = config['rx2_port'] - 1
-    bf_serial_port = config['bf_port']
     target = config['target']
     firmware_file_rx1 = os.path.join(os.path.dirname(os.path.dirname(__file__)), config['firmware_file_rx1'])
     firmware_file_rx2 = os.path.join(os.path.dirname(os.path.dirname(__file__)), config['firmware_file_rx2'])
@@ -192,7 +193,7 @@ if __name__ == '__main__':
         reset_serial_config(bf_serial, ports)
     
     bf_serial = int_serial(bf_serial_speed)
-    change_serial_config(bf_serial, int(rx2_port))
+    change_serial_config(bf_serial, rx2_port, rx1_port)
 
     print("======== Update RX2 ========")
     if wait_for_uart_port(30, 1) == False:
@@ -201,10 +202,12 @@ if __name__ == '__main__':
     time.sleep(2)
     bf_serial = int_serial(bf_serial_speed)
     bf_serial.close
+    time.sleep(1)
     if upload_esp8266_bf(upload_speed, False, False, firmware_file_rx2, target) == ElrsUploadResult.Success:
         is_rx2_updated = True
-        input("Unplug USB cable and insert back, then press enter to continue...")
-        time.sleep(5)
+        #input("Unplug USB cable and insert back, then press enter to continue...")
+        input("Витягніть і вставьте назад USB кабель...")
+        time.sleep(7)
     else:
         print("Failed to update RX2")
         sys.exit()
@@ -213,7 +216,7 @@ if __name__ == '__main__':
     bf_serial = int_serial(bf_serial_speed)
 
     print("Set port to RX1")
-    change_serial_config(bf_serial, rx1_port)
+    change_serial_config(bf_serial, rx1_port, rx2_port)
 
     print("======== Update RX1 ========")
     if wait_for_uart_port(30, 1) == False:
@@ -222,7 +225,8 @@ if __name__ == '__main__':
     time.sleep(2)
     bf_serial = int_serial(bf_serial_speed)
     bf_serial.close()
-    if upload_esp8266_bf(upload_speed, False, False, firmware_file_rx2, target) == ElrsUploadResult.Success:
+    time.sleep(1)
+    if upload_esp8266_bf(upload_speed, False, False, firmware_file_rx1, target) == ElrsUploadResult.Success:
         print("Firmware updated successfully")
     else:
         print("Failed to update RX1")

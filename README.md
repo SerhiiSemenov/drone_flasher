@@ -9,12 +9,16 @@
 ### Налаштування
 1. Вказати номера портів у файлі conf.json до яких приєднані приймачі.
     На приклад приймачі приєднані до портів UART2 та UART6
-    '"rx1_port": 6,'
-    '"rx2_port": 2,'
+    '``
+    "rx1_port": 6,
+    "rx2_port": 2,
+    '''
 
 2. Вказати ім'я файлів з прошивкою
-    '"firmware_file_rx1": "firmware_rx1.bin",'
-    '"firmware_file_rx2": "firmware_rx2.bin"'
+    '''
+    "firmware_file_rx1": "firmware_rx1.bin",
+    "firmware_file_rx2": "firmware_rx2.bin"
+    '''
 
 ### Запуск прошивки
 ./run.sh
