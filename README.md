@@ -13,7 +13,6 @@
     "rx1_port": 6,
     "rx2_port": 2,
     ```
-
 2. Вказати ім'я файлів з прошивкою
     ```
     "firmware_file_rx1": "firmware_rx1.bin",

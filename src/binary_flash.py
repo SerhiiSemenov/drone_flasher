@@ -167,6 +167,21 @@ def parse_config_file():
         config = json.load(f)
     return config
 
+def upload_fc_config(serial_port, config_file_path):
+    with open(config_file_path, 'r') as conf_file:
+        lines = conf_file.readlines()
+        for line in lines:
+            line = line.strip()
+            if line and not line.startswith('#'):
+                serial_port.write((line + "\n").encode())
+                time.sleep(0.3)
+    
+    print("Configuration uploaded successfully!")
+    serial_port.write(("save" + "\n").encode())
+    time.sleep(0.3)
+    serial_port.close()
+    time.sleep(3)
+
 
 if __name__ == '__main__':
     is_rx1_updated = False
@@ -179,38 +194,50 @@ if __name__ == '__main__':
     rx1_port = config['rx1_port'] - 1
     rx2_port = config['rx2_port'] - 1
     target = config['target']
+    is_dual_rx = config['dual_rx']
+    is_config_upload = config['upload_config']
+    config_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), config['config_file'])
     firmware_file_rx1 = os.path.join(os.path.dirname(os.path.dirname(__file__)), config['firmware_file_rx1'])
     firmware_file_rx2 = os.path.join(os.path.dirname(os.path.dirname(__file__)), config['firmware_file_rx2'])
     print("config read")
 
-    if rx2_port != 1:
-        print("Incorrect configuration, rx1_port should be 2")
-        sys.exit()
+    if is_config_upload == True:
+        bf_serial = int_serial(bf_serial_speed)
+        upload_fc_config(bf_serial, config_file)
+        #Waite for FC to reboot
+        if wait_for_uart_port(30, 1) == False:
+            print("Failed to open the serial port")
+            sys.exit()
 
-    bf_serial = int_serial(bf_serial_speed)
-    ports = get_betaflight_serial_config(bf_serial)
-    if len(ports) > 1:
-        reset_serial_config(bf_serial, ports)
-    
-    bf_serial = int_serial(bf_serial_speed)
-    change_serial_config(bf_serial, rx2_port, rx1_port)
+    if is_dual_rx == True:
+        if rx2_port != 1:
+            print("Incorrect configuration, rx1_port should be 2")
+            sys.exit()
 
-    print("======== Update RX2 ========")
-    if wait_for_uart_port(30, 1) == False:
-        print("Failed to open the serial port")
-        sys.exit()
-    time.sleep(2)
-    bf_serial = int_serial(bf_serial_speed)
-    bf_serial.close
-    time.sleep(1)
-    if upload_esp8266_bf(upload_speed, False, False, firmware_file_rx2, target) == ElrsUploadResult.Success:
-        is_rx2_updated = True
-        #input("Unplug USB cable and insert back, then press enter to continue...")
-        input("Витягніть і вставьте назад USB кабель...")
-        time.sleep(7)
-    else:
-        print("Failed to update RX2")
-        sys.exit()
+        bf_serial = int_serial(bf_serial_speed)
+        ports = get_betaflight_serial_config(bf_serial)
+        if len(ports) > 1:
+            reset_serial_config(bf_serial, ports)
+        
+        bf_serial = int_serial(bf_serial_speed)
+        change_serial_config(bf_serial, rx2_port, rx1_port)
+
+        print("======== Update RX2 ========")
+        if wait_for_uart_port(30, 1) == False:
+            print("Failed to open the serial port")
+            sys.exit()
+        time.sleep(2)
+        bf_serial = int_serial(bf_serial_speed)
+        bf_serial.close
+        time.sleep(1)
+        if upload_esp8266_bf(upload_speed, False, False, firmware_file_rx2, target) == ElrsUploadResult.Success:
+            is_rx2_updated = True
+            #input("Unplug USB cable and insert back, then press enter to continue...")
+            input("Витягніть і вставьте назад USB кабель...")
+            time.sleep(7)
+        else:
+            print("Failed to update RX2")
+            sys.exit()
 
 
     bf_serial = int_serial(bf_serial_speed)
