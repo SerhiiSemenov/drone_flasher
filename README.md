@@ -57,7 +57,7 @@
     ```
     "target": "Unified_ESP32_900_RX_via_BetaflightPassthrough"
     ```
-    Список приймачів
+    Список приймачів для Unified_ESP32_900_RX_via_BetaflightPassthrough
     1) BAYCKRC 900MHz Dual Core RX
     2) BETAFPV SuperD 900MHz RX
     3) BETAFPV SuperP 14Ch 900MHz RX
@@ -68,7 +68,30 @@
     8) GEPRC True Diversity 900MHz RX
     9) HappyModel ES900 Dual RX
     10) iFlight 900MHz 500mW Diversity RX
-3. Вказати номера портів у файлі conf.json до яких приєднані приймачі.
+
+   Список приймачів для Unified_ESP8285_900_RX_via_BetaflightPassthrough
+    1) BAYCKRC 900MHz Nano RX
+    2) BETAFPV 900MHz RX
+    3) DIY Huzzah RFM95 900MHz TX
+    4) EMAX 900MHz RX
+    5) Foxeer 900MHz RX
+    6) Generic ESP8285 SX127x 900MHz RX
+    7) Generic ESP8285 SX127x with PWM 900MHz RX
+    8) GEPRC Nano 900MHz RX
+    9) HappyModel ES900 RX
+    10) HappyModel EPW6 PWM RX
+    11) HGLRC Hermes 900MHz RX
+    12) HiYOUNGER 900MHz RX
+    13) iFlight 900MHz RX
+    14) iFlight 900MHz Nano RX
+    15) iFlight 900MHz 500mW RX
+    16) Jumper AION Mini 900MHz RX
+    17) NamimnoRC Voyager ESP 900MHz RX
+    18) NeutronRC 900MHz RX
+    19) RadioMaster BR1 900Mz RX
+    20) RadioMaster BR3 Diversity 900Mz RX
+
+4. Вказати номера портів у файлі conf.json до яких приєднані приймачі.
     На приклад приймачі приєднані до портів UART2 та UART6
     ```
     "rx1_port": 6,
