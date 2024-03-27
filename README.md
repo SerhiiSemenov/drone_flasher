@@ -1,5 +1,5 @@
 # drone_flasher
-## Script for flashing RX via FC
+## Script for flashing and setting up a drone with betaflight and ELRS or Barvinok
 
 Скрипт для прошивки приймачів FPV дрона.
 
