@@ -2,11 +2,12 @@
     "rx1_port": 6,
     "rx2_port": 2,
     "dual_rx": true,
-    "upload_config": true,
-    "upload_fc_firmware": true,
+    "upload_fc_firmware": false,
+    "upload_config": false,
+    "upload_rx_firmware": true,
     "target": "Unified_ESP8285_900_RX_via_BetaflightPassthrough",
     "config_file": "config.txt",
-    "firmware_file_fc": "firmware_fc.bin",
+    "firmware_file_fc": "betaflight_4.5.0_STM32F405.dfu",
     "firmware_file_rx1": "firmware_rx1.bin",
     "firmware_file_rx2": "firmware_rx2.bin"
 }
