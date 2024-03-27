@@ -1,7 +1,4 @@
 #!/usr/bin/python
-
-from enum import Enum
-import shutil
 import os
 
 from elrs_helpers import ElrsUploadResult
@@ -16,13 +13,11 @@ import serial
 import time
 import re
 import json
+import subprocess
 
 sys.path.append(dirname(__file__) + '/external/esptool')
-
-from external.esptool import esptool
-import json
 sys.path.append(dirname(__file__) + "/external")
-
+from external.esptool import esptool
 
 def upload_esp8266_bf(baud, force:bool, erase:bool, file_name:str, firmware:str):
     port = serials_find.get_serial_port()
@@ -44,36 +39,30 @@ def upload_esp8266_bf(baud, force:bool, erase:bool, file_name:str, firmware:str)
         return ElrsUploadResult.ErrorGeneral
     return ElrsUploadResult.Success
 
-def upload_esp32_bf(args, options):
-    print("Uploading via Betaflight")
-    if args.port == None:
-        args.port = serials_find.get_serial_port()
+def upload_esp32_bf(baud, force:bool, erase:bool, file_name:str, firmware:str):
+    port = serials_find.get_serial_port()
+    if port == None:
+        port = serials_find.get_serial_port()
     mode = 'upload'
-    if args.force == True:
+    if force == True:
         mode = 'uploadforce'
-    retval = BFinitPassthrough.main(['-p', args.port, '-b', str(args.baud), '-r', options.firmware, '-a', mode])
+    retval = BFinitPassthrough.main(['-p', port, '-b', str(baud), '-r', firmware, '-a', mode, '-t', 'ESP32'])
     if retval != ElrsUploadResult.Success:
         return retval
     try:
-        esptool.main(['--passthrough', '--chip', 'esp32', '--port', args.port, '--baud', str(args.baud), '--before', 'no_reset', '--after', 'hard_reset', 'write_flash', '-z', '--flash_mode', 'dio', '--flash_freq', '40m', '--flash_size', 'detect', '0x10000', file_name])
+        esptool.main(['--passthrough', '--chip', 'esp32', '--port', port, '--baud', str(baud), '--before', 'no_reset', '--after', 'hard_reset', 'write_flash', '-z', '--flash_mode', 'dio', '--flash_freq', '40m', '--flash_size', 'detect', '0x10000', file_name])
     except:
         return ElrsUploadResult.ErrorGeneral
     return ElrsUploadResult.Success
 
-def upload_esp32_uart(port, baud, erase:bool, file_name:str):
-    print("Uploading esp32 via UART")
-    if port == None:
-        port = serials_find.get_serial_port()
-    try:
-        dir = os.path.dirname(file_name)
-        cmd = ['--chip', 'esp32', '--port', port, '--baud', str(baud), '--after', 'hard_reset', 'write_flash']
-        if erase: cmd.append('--erase-all')
-        cmd.extend(['-z', '--flash_mode', 'dio', '--flash_freq', '40m', '--flash_size', 'detect', '0x1000', os.path.join(dir, 'bootloader.bin'), '0x8000', os.path.join(dir, 'partitions.bin'), '0xe000', os.path.join(dir, 'boot_app0.bin'), '0x10000', file_name])
-        esptool.main(cmd)
-    except:
-
-        return ElrsUploadResult.ErrorGeneral
-    return ElrsUploadResult.Success
+def upload_rx_firmware(baud, force:bool, erase:bool, file_name:str, firmware:str):
+    if firmware == "Unified_ESP8285_900_RX_via_BetaflightPassthrough":
+        return upload_esp8266_bf(baud, force, erase, file_name, firmware)
+    elif firmware == "Unified_ESP32_900_RX_via_BetaflightPassthrough":
+        return upload_esp32_bf(baud, force, erase, file_name, firmware)
+    else:
+        print("Error: Unsupported target")
+        return None
 
 def wait_for_uart_port(timeout=30, interval=1):
     """
@@ -92,23 +81,29 @@ def wait_for_uart_port(timeout=30, interval=1):
     return False
 
 def int_serial(baud_rate):
-    wait_for_uart_port(30, 1)
+    if wait_for_uart_port(30, 1) == False:
+        print(f"!Серіал порт не знайдено: {print_line_number()}")
+        sys.exit()
+    else:
+        print("Serial port detected")
+
     time.sleep(1)
     port = serials_find.get_serial_port()
     if port == None:
-        print("No serial port found")
-        os._exit(1)
+        print(f"!Серіал порт не знайдено: {port}")
+        wait_for_uart_port(30, 1)
+        port = serials_find.get_serial_port()
+        if port == None:
+            print(f"!Серіал порт не знайдено з другої спроби: {port}")
+            os._exit(1)
 
     try:
-        print(".", end="")
         ser = serial.Serial(port, baud_rate, timeout=1)
-        print(".", end="")
+        print(f"Serial port found: {port}")
         time.sleep(0.3)
-        print(".", end="")
         ser.write("#\n".encode())
         ser.flush()
         ser.readlines()
-        print(".")
 
     except serial.SerialException as e:
         print(f"Error occurred while communicating with the flight controller: {e}")
@@ -116,7 +111,7 @@ def int_serial(baud_rate):
     return ser
 
 def change_serial_config(bf_serial, uart_number_to_set, uart_number_to_reset):
-
+    print("Changing serial cinfigurattion...")
     bf_serial.write((f"serial {uart_number_to_set} 64 115200 57600 0 115200" + "\n").encode())
     time.sleep(0.3)
     bf_serial.write((f"serial {uart_number_to_reset} 0 115200 57600 0 115200" + "\n").encode())
@@ -168,13 +163,17 @@ def parse_config_file():
     return config
 
 def upload_fc_config(serial_port, config_file_path):
+    i = 0
     with open(config_file_path, 'r') as conf_file:
         lines = conf_file.readlines()
         for line in lines:
+            i = i+1
             line = line.strip()
             if line and not line.startswith('#'):
                 serial_port.write((line + "\n").encode())
                 time.sleep(0.3)
+                if i % 10 == 0:
+                    print(".")
     
     print("Configuration uploaded successfully!")
     serial_port.write(("save" + "\n").encode())
@@ -182,8 +181,16 @@ def upload_fc_config(serial_port, config_file_path):
     serial_port.close()
     time.sleep(3)
 
+def reboot_to_bootloader_fc(serial_port):
+    serial_port.wrifte(("bl"+ "\n").encode())
 
-if __name__ == '__main__':
+def print_line_number():
+    # Get the frame object for the caller's stack frame
+    frame = inspect.currentframe()
+    # Get the line number where the function is called
+    return frame.f_back.f_lineno
+
+def main():
     is_rx1_updated = False
     is_rx2_updated = False
     upload_speed = 420000
@@ -196,22 +203,36 @@ if __name__ == '__main__':
     target = config['target']
     is_dual_rx = config['dual_rx']
     is_config_upload = config['upload_config']
+    is_upload_fc_firmware = config['upload_fc_firmware']
+
     config_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), config['config_file'])
     firmware_file_rx1 = os.path.join(os.path.dirname(os.path.dirname(__file__)), config['firmware_file_rx1'])
     firmware_file_rx2 = os.path.join(os.path.dirname(os.path.dirname(__file__)), config['firmware_file_rx2'])
-    print("config read")
+    firmware_file_fc = os.path.join(os.path.dirname(os.path.dirname(__file__)), config['firmware_file_fc'])
+    fc_flash_command = ["dfu-util", "-a", "0", "-D", firmware_file_fc, "-s", ":leave"]
+    print("Config read done")
 
+    if is_upload_fc_firmware == True:
+        print("FC firmware loading...")
+        bf_serial = int_serial(bf_serial_speed)
+        reboot_to_bootloader_fc(bf_serial)
+        time.sleep(2)
+        subprocess.run(fc_flash_command, check=True)
+    
     if is_config_upload == True:
+        print("FC configuration loading...")
         bf_serial = int_serial(bf_serial_speed)
         upload_fc_config(bf_serial, config_file)
+        time.sleep(2)
         #Waite for FC to reboot
         if wait_for_uart_port(30, 1) == False:
-            print("Failed to open the serial port")
+            print(f"!Серіал порт не знайдено: {print_line_number()}")
             sys.exit()
 
+        print("RXs firmware loading...")
     if is_dual_rx == True:
         if rx2_port != 1:
-            print("Incorrect configuration, rx1_port should be 2")
+            print("Не вірна конфігурація, rx2_port має дорівнювати 2")
             sys.exit()
 
         bf_serial = int_serial(bf_serial_speed)
@@ -224,39 +245,44 @@ if __name__ == '__main__':
 
         print("======== Update RX2 ========")
         if wait_for_uart_port(30, 1) == False:
-            print("Failed to open the serial port")
+            print(f"!Серіал порт не знайдено: {print_line_number()}")
             sys.exit()
+        else:
+            print("Port detected")
         time.sleep(2)
         bf_serial = int_serial(bf_serial_speed)
         bf_serial.close
         time.sleep(1)
-        if upload_esp8266_bf(upload_speed, False, False, firmware_file_rx2, target) == ElrsUploadResult.Success:
+        if upload_rx_firmware(upload_speed, False, False, firmware_file_rx2, target) == ElrsUploadResult.Success:
             is_rx2_updated = True
             #input("Unplug USB cable and insert back, then press enter to continue...")
-            input("Витягніть і вставьте назад USB кабель...")
+            input("\n!Витягніть і вставьте назад USB кабель...")
             time.sleep(7)
         else:
             print("Failed to update RX2")
             sys.exit()
 
-
-    bf_serial = int_serial(bf_serial_speed)
-
-    print("Set port to RX1")
-    change_serial_config(bf_serial, rx1_port, rx2_port)
+        bf_serial = int_serial(bf_serial_speed)
+        print("Set port to RX1")
+        change_serial_config(bf_serial, rx1_port, rx2_port)
 
     print("======== Update RX1 ========")
     if wait_for_uart_port(30, 1) == False:
-        print("Failed to open the serial port")
+        print(f"!Серіал порт не знайдено: {print_line_number()}")
         sys.exit()
+    else:
+        print("Port detected")
     time.sleep(2)
     bf_serial = int_serial(bf_serial_speed)
     bf_serial.close()
     time.sleep(1)
-    if upload_esp8266_bf(upload_speed, False, False, firmware_file_rx1, target) == ElrsUploadResult.Success:
+    if upload_rx_firmware(upload_speed, False, False, firmware_file_rx1, target) == ElrsUploadResult.Success:
         print("Firmware updated successfully")
     else:
         print("Failed to update RX1")
 
     bf_serial.close()
 
+
+if __name__ == '__main__':
+    main()

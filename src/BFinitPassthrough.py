@@ -39,7 +39,7 @@ def _validate_serialrx(rl, config, expected):
 def bf_passthrough_init(port, requestedBaudrate, half_duplex=False):
     sys.stdout.flush()
     dbg_print("======== PASSTHROUGH INIT ========")
-    dbg_print("  Trying to initialize %s @ %s" % (port, requestedBaudrate))
+    dbg_print("Trying to initialize %s @ %s" % (port, requestedBaudrate))
 
     s = serial.Serial(port=port, baudrate=115200,
         bytesize=8, parity='N', stopbits=1,
