@@ -182,7 +182,7 @@ def upload_fc_config(serial_port, config_file_path):
     time.sleep(3)
 
 def reboot_to_bootloader_fc(serial_port):
-    serial_port.wrifte(("bl"+ "\n").encode())
+    serial_port.write(("bl"+ "\n").encode())
 
 def print_line_number():
     # Get the frame object for the caller's stack frame
