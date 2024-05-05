@@ -14,6 +14,7 @@ import time
 import re
 import json
 import subprocess
+import inspect
 
 sys.path.append(dirname(__file__) + '/external/esptool')
 sys.path.append(dirname(__file__) + "/external")
