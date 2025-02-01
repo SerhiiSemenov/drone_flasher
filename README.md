@@ -1,5 +1,5 @@
 # drone_flasher
-## Script for flashing and setting up a drone with betaflight and ELRS or Barvinok
+## Script for flashing and setting up a drone with betaflight and ELRS
 
 Скрипт для прошивки приймачів FPV дрона.
 
@@ -102,7 +102,7 @@
     "firmware_file_rx1": "firmware_rx1.bin",
     "firmware_file_rx2": "firmware_rx2.bin"
     ```
-3. Для прошивкі одразу двох приймачів треба вказати, актуально для прошивкі Barvinok:
+3. Для прошивкі одразу двох приймачів треба вказати:
    ```
    "dual_rx": true
    ```
